@@ -1,37 +1,60 @@
 import os
-import argparse
-from rlcard.agents import CFRAgent, RandomAgent
-import datetime
+from collections import namedtuple
+
+from rlcard.agents import CFRAgent
+import json
 
 import rlcard
 from rlcard import models
-from rlcard.utils import  tournament, Logger
+from rlcard.utils import tournament, Logger, set_seed
+import time
+import datetime
 
-def testModel(args):
-    env = rlcard.make('leduc-holdem')
-    # comparison_model = RandomAgent(num_actions=env.num_actions)
-    comparison_agent = models.load('leduc-holdem-cfr').agents[0]
-    tested_agent = CFRAgent(env, os.path.join(args.model_path, args.model_name))
-    tested_agent.load()
-    env.set_agents([ comparison_agent, tested_agent])
-    with Logger(args.log_dir) as logger:
-        rewards = tournament(env, args.num_eval_games)
-        print(args.first_agent_name)
-        logger.log_performance(env.timestep, rewards[0])
-        print(args.second_agent_name)
-        logger.log_performance(env.timestep, rewards[1])
+
+class TrainConfig:
+    def __init__(self, seed, num_episodes, num_eval_games, checkpoint, model_name, log_dir):
+        self.seed = seed
+        self.num_episodes = num_episodes
+        self.num_eval_games = num_eval_games
+        self.checkpoint = checkpoint
+        self.model_name = model_name
+        self.log_dir = log_dir
+
+def train(trainConfig: TrainConfig):
+    start = time.time()
+    env = rlcard.make('leduc-holdem', config={'seed': 0, 'allow_step_back':True})
+    eval_env = rlcard.make('leduc-holdem', config={'seed': 0})
+    # Seed numpy, torch, random
+    set_seed(trainConfig.seed)
+    # Initilize CFR Agent
+    agent = CFRAgent(env, os.path.join(trainConfig.log_dir, trainConfig.model_name))
+    agent.load()  # If we have saved model, we first load the model
+
+    # Evaluate my model CFR against pretrained model
+    eval_env.set_agents([agent, models.load('leduc-holdem-cfr').agents[0]])
+
+    # Start training
+    with Logger(trainConfig.log_dir) as logger:
+        for episode in range(trainConfig.num_episodes):
+            agent.train()
+            if episode % trainConfig.checkpoint == 0:
+                agent.save() # Save model
+        tournament_result = tournament(eval_env, trainConfig.num_eval_games)
+        end = time.time()
+        duration = str(datetime.timedelta(seconds=(end-start)))
+        logger.log("For the config {}: \n"
+                   "Result are model: {} vs pretrained model: {} \n"
+                   "Duration of training is {}".
+                   format(trainConfig, tournament_result[0], tournament_result[1], duration))
 
 
 if __name__ == '__main__':
-    today_date = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-    parser = argparse.ArgumentParser("CFR example in RLCard")
-    parser.add_argument('--num_eval_games', type=int, default=1000)
-    parser.add_argument('--model_path', type=str, default='experiments/leduc_holdem_cfr_result/')
-    parser.add_argument('--model_name', type=str, default='cfr_model')
-    parser.add_argument('--log_dir', type=str, default='experiments/leduc_holdem_compare_result/{}'.format(today_date))
-    parser.add_argument('--first_agent_name', type=str, default='random agent')
-    parser.add_argument('--second_agent_name', type=str, default='trained cfr agent')
+    with open('run_configs/runs_1.json') as f:
+        trainConfigs = json.load(f)
+        for configDict in trainConfigs:
+            config = namedtuple("TrainConfig", configDict.keys())(*configDict.values())
+            train(config)
 
-    args = parser.parse_args()
 
-    testModel(args)
+
+
