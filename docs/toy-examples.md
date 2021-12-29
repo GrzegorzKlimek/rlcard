@@ -245,7 +245,7 @@ if __name__ == '__main__':
     parser.add_argument('--num_episodes', type=int, default=5000)
     parser.add_argument('--num_games', type=int, default=2000)
     parser.add_argument('--evaluate_every', type=int, default=100)
-    parser.add_argument('--log_dir', type=str, default='experiments/leduc_holdem_cfr_result/')
+    parser.add_argument('--log_dir', type=str, default='experiments/leduc_holdem_cfr_results/')
 
     args = parser.parse_args()
 

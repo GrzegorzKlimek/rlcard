@@ -20,7 +20,7 @@ if __name__ == '__main__':
     parser.add_argument('--seed', type=int, default=42)
     parser.add_argument('--num_eval_games', type=int, default=2000)
     parser.add_argument('--model_name', type=str, default="cfr_model")
-    parser.add_argument('--log_dir', type=str, default='experiments/leduc_holdem_cfr_result/')
+    parser.add_argument('--log_dir', type=str, default='experiments/leduc_holdem_cfr_results/')
 
     args = parser.parse_args()
     env = rlcard.make('leduc-holdem', config={'seed': 0, 'allow_step_back':True})

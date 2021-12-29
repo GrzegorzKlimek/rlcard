@@ -11,7 +11,7 @@ from rlcard.utils import print_card
 # Make environment
 env = rlcard.make('leduc-holdem')
 human_agent = HumanAgent(env.num_actions)
-cfr_agent = CFRAgent(env, os.path.join('../experiments/leduc_holdem_cfr_result/', 'cfr_model'))
+cfr_agent = CFRAgent(env, os.path.join('../experiments/leduc_holdem_cfr_results/', 'cfr_model'))
 cfr_agent.load()  # If we have saved model, we first load the model
 env.set_agents([human_agent, cfr_agent])
 
