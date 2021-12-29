@@ -36,6 +36,7 @@ def train(eval_env, agent, eval_agent, trainConfig):
             agent.train()
             if episode % trainConfig.checkpoint == 0:
                 agent.save() # Save model
+                logger.log_performance(env.timestep, tournament(eval_env, trainConfig.num_eval_games)[0])
         end = time.time()
         duration = str(datetime.timedelta(seconds=(end-start)))
         logger.log("Training for config {}. Took: {} \n".format(trainConfig, duration))
